@@ -94,7 +94,7 @@ const ParticleParams = {
 const initialState = {
   input: '',
   imageURL: '',
-  box: {},
+  boxes: [],
   route: 'signin',
   isSignedIn: false,
   user: {
@@ -118,21 +118,21 @@ class App extends Component {
 
 
   // Calculate with response where the bounding_box would be located
-  calculateFaceLocation = (data) => {
-    const clarifaiFace = data.outputs["0"].data.regions["0"].region_info.bounding_box;
+  calculateFaceLocations = (data) => {
+    return data.outputs["0"].data.regions.map(face => {
+      const clarifaiFace = face.region_info.bounding_box;
+      // Grab image by id
+      const image = document.getElementById('inputImage');
+      const width = Number(image.width);
+      const height = Number(image.height);
 
-    // Grab image by id
-    const image = document.getElementById('inputImage');
-    const width = Number(image.width);
-    const height = Number(image.height);
-
-    return {
-      leftCol: clarifaiFace.left_col * width,
-      topRow: clarifaiFace.top_row * height,
-      rightCol: width - (clarifaiFace.right_col * width),
-      bottomRow: height - (clarifaiFace.bottom_row * height)
-    }
-
+      return {
+        leftCol: clarifaiFace.left_col * width,
+        topRow: clarifaiFace.top_row * height,
+        rightCol: width - (clarifaiFace.right_col * width),
+        bottomRow: height - (clarifaiFace.bottom_row * height)
+      }
+    });
   }
 
   loadUser = (data) => {
@@ -145,8 +145,8 @@ class App extends Component {
     }});
   }
 
-  displayFaceBox = (box) => {
-    this.setState({box: box});
+  displayFaceBoxes = (boxes) => {
+    this.setState({boxes: boxes});
   }
 
   // Check whenever there is an input on ImageLinkForm
@@ -181,7 +181,7 @@ class App extends Component {
             .catch(console.log);
 
         }
-        this.displayFaceBox(this.calculateFaceLocation(response))
+        this.displayFaceBoxes(this.calculateFaceLocations(response))
       })
       .catch(err => console.log(err));
   }
@@ -198,7 +198,7 @@ class App extends Component {
 
   render() {
 
-    const { isSignedIn, box, imageURL, route, user } = this.state;
+    const { isSignedIn, boxes, imageURL, route, user } = this.state;
     return (
       <div className="App">
         <Particles className='particles' params={ParticleParams}/>
@@ -209,7 +209,7 @@ class App extends Component {
             <Logo/>
             <Rank name={user.name} entries={user.entries}/>
             <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
-            <FaceRecognition box={box} imageURL={imageURL}/>
+            <FaceRecognition boxes={boxes} imageURL={imageURL}/>
           </div>
           : (
             route === 'signin'
